@@ -47,7 +47,7 @@ def test(model, device, test_loader):
             data, target = data.to(device), target.to(device)
             output = model(data)
             test_loss += F.nll_loss(F.log_softmax(output, dim=1), target,reduction='sum').item()
-            pred = output.max(1, keepdim=True)[1]
+            pred = output.argmax(dim=1)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     test_loss /= len(test_loader.dataset)
@@ -55,10 +55,6 @@ def test(model, device, test_loader):
     test_loss, correct, len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
     accu = float(correct) / len(test_loader.dataset)
     return accu, test_loss
-
-
-def test_with_predict(model, device, test_loader):
-    pass
 
 
 def valid(model, device, valid_loader):
