@@ -1,5 +1,4 @@
 import torch
-from torch.autograd import Variable
 import torch.nn.functional as F
 
 
@@ -28,12 +27,11 @@ def test_stat(model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            data, target = Variable(data), Variable(target)
             output = model(data)
             output = F.log_softmax(output, dim=1)
             loss += F.nll_loss(output, target, reduction='sum').item()
 
-            pred = output.max(1, keepdim=True)[1]
+            pred = output.argmax(dim=1)
             a, b, c, d, e = sum(pred, target)
             N += a
             P += b
@@ -50,3 +48,18 @@ def test_stat(model, device, test_loader):
     print('漏检率(FNR): {}/{} ({:.6f}%)'.format(S - P, S, 100. * Pmd))
     return accu, loss
 
+
+def predict(model, device, data_loader):
+    pred_list = []
+    file_list = []
+    model.eval()
+    with torch.no_grad():
+        for data, filename in data_loader:
+            data = data.to(device)
+            output = model(data)
+            pred = output.argmax(dim=1)
+            pred_l = pred.cpu().numpy()
+            pred_list.extend(pred_l)
+            file_list.extend(filename)
+
+    return pred_list, file_list

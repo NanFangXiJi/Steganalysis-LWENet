@@ -1,13 +1,13 @@
-
 import os
 import numpy as np
 import torch
 import random
 from torch.utils.data.dataset import Dataset
 from PIL import Image
+
+
 class DatasetPair(Dataset):
-    def __init__(self, cover_dir, stego_dir,
-                 transform):
+    def __init__(self, cover_dir, stego_dir, transform):
         self.cover_dir = cover_dir
         self.stego_dir = stego_dir
         self.cover_list = os.listdir(cover_dir)
@@ -19,30 +19,52 @@ class DatasetPair(Dataset):
 
     def __getitem__(self, idx):
         idx = int(idx)
-        labels = np.array([0,1], dtype='int32')
-        cover_path = os.path.join(self.cover_dir,
-                                  self.cover_list[idx])
+        labels = np.array([0, 1], dtype='int32')
+        cover_path = os.path.join(self.cover_dir, self.cover_list[idx])
         cover = Image.open(cover_path)
-        images = np.empty((2, cover.size[0], cover.size[1], 1),
-                          dtype='uint8')
-        images[0,:,:,0] = np.array(cover)
-        stego_path = os.path.join(self.stego_dir,
-                                      self.cover_list[idx])
+        images = np.empty((2, cover.size[0], cover.size[1], 1), dtype='uint8')
+        images[0, :, :, 0] = np.array(cover)
+        stego_path = os.path.join(self.stego_dir, self.cover_list[idx])
         stego = Image.open(stego_path)
-        images[1,:,:,0] = np.array(stego)
+        images[1, :, :, 0] = np.array(stego)
         samples = {'images': images, 'labels': labels}
         if self.transform:
             samples = self.transform(samples)
         return samples
+
+
+class DatasetPred(Dataset):
+    def __init__(self, folder_path, transform):
+        self.folder_path = folder_path
+        self.transform = transform
+        self.image_files = os.listdir(folder_path)
+        assert len(self.image_files) != 0, "prediction path is empty"
+
+    def __len__(self):
+        return len(self.image_files)
+
+    def __getitem__(self, idx):
+        idx = int(idx)
+        img_name = self.image_files[idx]
+        img_path = os.path.join(self.folder_path, img_name)
+        image = Image.open(img_path)
+
+        if self.transform:
+            image = self.transform(image)
+
+        image = np.array(image)
+        return image, img_name
+
+
 class ToTensor(object):
     def __call__(self, samples):
         images, labels = samples['images'], samples['labels']
-        images = (images.transpose((0,3,1,2)).astype('float32') / 255)
+        images = (images.transpose((0, 3, 1, 2)).astype('float32') / 255)
         return {'images': torch.from_numpy(images),
                 'labels': torch.from_numpy(labels).long()}
 
 
-class AugData():
+class AugData:
     def __call__(self, samples):
         images, labels = samples['images'], samples['labels']
 
